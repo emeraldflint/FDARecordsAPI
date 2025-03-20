@@ -5,6 +5,11 @@ import com.emerald.fda.records.api.dto.request.StoreDrugApplicationRecordDto;
 import com.emerald.fda.records.api.dto.response.PageResponseDto;
 import com.emerald.fda.records.api.entity.DrugApplicationRecord;
 import com.emerald.fda.records.api.service.DrugApplicationRecordsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Validated
 @Slf4j
+@Tag(name = "Drug Applications", description = "API for managing drug application records")
 public class DrugApplicationRecordsController {
 
     private final DrugApplicationRecordsService service;
@@ -38,13 +44,26 @@ public class DrugApplicationRecordsController {
      * Searches for drug applications in the FDA database.
      */
     @GetMapping("/search")
+    @Operation(summary = "Search drug applications in FDA database")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Search completed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters provided"),
+            @ApiResponse(responseCode = "503", description = "FDA API unavailable")
+    })
     public ResponseEntity<FdaResponseDto> searchDrugApplicationRecord(
+            @Parameter(description = "FDA manufacturer name", required = true)
             @RequestParam String manufacturerName,
+
+            @Parameter(description = "FDA brand name (optional)")
             @RequestParam(required = false) String brandName,
+
+            @Parameter(description = "Number of results to skip")
             @RequestParam(defaultValue = "0") @Min(0) int skip,
+
+            @Parameter(description = "Maximum number of results to return")
             @RequestParam(defaultValue = "10") @Min(1) int limit) {
 
-        log.info("Received request to search drug applications with manufacturer: {}, brand: {}",
+        log.info("Received request to search drug application records with manufacturer: {}, brand: {}",
                 manufacturerName, brandName);
 
         FdaResponseDto response = service.searchDrugApplicationRecords(manufacturerName, brandName, skip, limit);
@@ -55,7 +74,13 @@ public class DrugApplicationRecordsController {
      * Stores specific drug application details in the system.
      */
     @PostMapping
+    @Operation(summary = "Store specific drug application record details")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Drug application record stored successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid drug application record data provided")
+    })
     public ResponseEntity<DrugApplicationRecord> storeSpecificDrugApplicationRecord(
+            @Parameter(description = "Specific drug application record details to store", required = true)
             @RequestBody @Valid StoreDrugApplicationRecordDto applicationDto) {
 
         log.info("Received request to store specific drug application: {}", applicationDto.applicationNumber());
@@ -74,8 +99,15 @@ public class DrugApplicationRecordsController {
      * Gets all drug applications stored in the system.
      */
     @GetMapping
+    @Operation(summary = "Get all drug application records stored in the system")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved drug application records")
+    })
     public ResponseEntity<PageResponseDto<DrugApplicationRecord>> getAllDrugApplicationRecords(
+            @Parameter(description = "Page number (zero-based)")
             @RequestParam(defaultValue = "0") @Min(0) int page,
+
+            @Parameter(description = "Page size")
             @RequestParam(defaultValue = "10") @Min(1) int size) {
 
         log.info("Received request to get all drug applications, page: {}, size: {}", page, size);
@@ -90,10 +122,16 @@ public class DrugApplicationRecordsController {
      * Gets a drug application by its application number.
      */
     @GetMapping("/{applicationNumber}")
+    @Operation(summary = "Get a drug application record by its application number")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved the drug application record"),
+            @ApiResponse(responseCode = "404", description = "Drug application record not found")
+    })
     public ResponseEntity<DrugApplicationRecord> getDrugApplicationRecordById(
+            @Parameter(description = "Application number", required = true)
             @PathVariable String applicationNumber) {
 
-        log.info("Received request to get drug application by ID: {}", applicationNumber);
+        log.info("Received request to get drug application record by ID: {}", applicationNumber);
 
         return service.getDrugApplicationById(applicationNumber)
                 .map(ResponseEntity::ok)
