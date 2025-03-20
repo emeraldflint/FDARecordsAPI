@@ -29,7 +29,7 @@ public class FdaClientService {
      * @param brandName The optional brand name to search for
      * @return A {@link FdaResponseDto} object containing the search results
      */
-    public FdaResponseDto searchDrugApplications(
+    public FdaResponseDto searchDrugApplicationRecords(
             String manufacturerName,
             String brandName,
             int skip,

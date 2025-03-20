@@ -44,7 +44,7 @@ class FdaClientServiceTest {
     }
 
     @Test
-    void searchDrugApplications_ShouldCallFdaApiWithCorrectParams() {
+    void searchDrugApplicationRecords_ShouldCallFdaApiWithCorrectParams() {
         // given
         FdaResponseDto expectedResponse = new FdaResponseDto(
                 new MetaDto(null, null, null, null, new ResultsMetaDto(0, 10, 1)),
@@ -55,7 +55,7 @@ class FdaClientServiceTest {
                 .thenReturn(expectedResponse);
 
         // when
-        FdaResponseDto actualResponse = fdaClientService.searchDrugApplications("TARO", "LORATADINE", 0, 10);
+        FdaResponseDto actualResponse = fdaClientService.searchDrugApplicationRecords("TARO", "LORATADINE", 0, 10);
 
         // than
         assertThat(actualResponse).isEqualTo(expectedResponse);
@@ -71,13 +71,13 @@ class FdaClientServiceTest {
     }
 
     @Test
-    void searchDrugApplications_WithoutBrandName_ShouldNotIncludeBrandNameInQuery() {
+    void searchDrugApplicationRecords_WithoutBrandName_ShouldNotIncludeBrandNameInQuery() {
         // given
         when(restTemplate.getForObject(anyString(), eq(FdaResponseDto.class)))
                 .thenReturn(new FdaResponseDto(null, null));
 
         // when
-        fdaClientService.searchDrugApplications("TARO", null, 0, 10);
+        fdaClientService.searchDrugApplicationRecords("TARO", null, 0, 10);
 
         // then
         verify(restTemplate).getForObject(urlCaptor.capture(), eq(FdaResponseDto.class));
