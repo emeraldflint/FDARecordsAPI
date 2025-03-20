@@ -8,6 +8,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
+import java.util.HashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -51,9 +52,9 @@ public class DrugApplicationRecord {
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(
             name = "product_numbers",
-            joinColumns = @JoinColumn(name = "application_number") // Match Primary Key Name
+            joinColumns = @JoinColumn(name = "application_number")
     )
     @Column(name = "product_number", nullable = false)
     @Builder.Default
-    private Set<String> productNumber;
+    private Set<String> productNumbers = new HashSet<>();
 }
