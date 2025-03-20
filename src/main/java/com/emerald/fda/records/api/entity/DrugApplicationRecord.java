@@ -19,13 +19,13 @@ import lombok.Setter;
  * Entity class representing a drug application record stored in the system.
  */
 @Entity
-@Table(name = "drug_application_records")
+@Table(name = "drug_application_record")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DrugApplicationRecords {
+public class DrugApplicationRecord {
     /**
      * Application number, used as the primary key.
      */
