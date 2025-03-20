@@ -40,7 +40,7 @@ class FdaClientServiceTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(fdaClientService, "baseUrl", baseUrl);
+        ReflectionTestUtils.setField(fdaClientService, "openFdaBaseUrl", baseUrl);
     }
 
     @Test

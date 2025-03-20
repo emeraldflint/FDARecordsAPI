@@ -2,8 +2,10 @@ package com.emerald.fda.records.api.service;
 
 import com.emerald.fda.records.api.dto.fda.FdaResponseDto;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.service.spi.ServiceException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -14,16 +16,16 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Slf4j
 public class FdaClientService {
     private final RestTemplate restTemplate;
-    private final String baseUrl;
+    private final String openFdaBaseUrl;
 
     public FdaClientService(RestTemplate restTemplate,
-                            @Value("${fda.base.url}") String baseUrl) {
+                            @Value("${fda.api.base-url}") String openFdaBaseUrl) {
         this.restTemplate = restTemplate;
-        this.baseUrl = baseUrl;
+        this.openFdaBaseUrl = openFdaBaseUrl;
     }
 
     /**
-     * Searches for drug applications in the OpenFDA API.
+     * Searches for drug applications records in the OpenFDA API.
      *
      * @param manufacturerName The manufacturer name to search for
      * @param brandName The optional brand name to search for
@@ -38,51 +40,47 @@ public class FdaClientService {
         log.info("Searching for drug applications with manufacturer: {}, brand: {}, skip: {}, limit: {}",
                 manufacturerName, brandName, skip, limit);
 
-        var builder = UriComponentsBuilder.fromUriString(baseUrl);
+        String searchQuery = buildSearchQuery(manufacturerName, brandName);
+        String uri = UriComponentsBuilder.fromUriString(openFdaBaseUrl)
+                .queryParam("search", searchQuery)
+                .queryParam("skip", skip)
+                .queryParam("limit", limit)
+                .build()
+                .toUriString();
 
-        // Build the search query
-        var searchQuery = buildSearchQuery(manufacturerName, brandName);
+        log.debug("OpenFDA API request URL: {}", uri);
 
-        // Add query parameters
-        builder.queryParam("search", searchQuery);
-        builder.queryParam("skip", skip);
-        builder.queryParam("limit", limit);
+        try {
+            var response = restTemplate.getForObject(uri, FdaResponseDto.class);
 
-        var url = builder.toUriString();
-        log.debug("FDA API request URL: {}", url);
+            log.info("Retrieved {} drug application records from OpenFDA API",
+                    response != null && response.results() != null ? response.results().size() : 0);
 
-        // Make the request to the FDA API
-        FdaResponseDto response = restTemplate.getForObject(url, FdaResponseDto.class);
-
-        if (response != null && response.results() != null) {
-            log.info("Found {} drug applications", response.results().size());
-        } else {
-            log.warn("No drug applications found or response is null");
+            return response;
+        } catch (Exception ex) {
+            log.error("Error calling OpenFDA API: {}", ex.getMessage(), ex);
+            throw new ServiceException("Failed to retrieve drug application records from OpenFDA API", ex);
         }
-
-        return response;
     }
 
     /**
-     * Build the search query string for the OpenFDA API.
+     * Builds a search query string for the OpenFDA API based on manufacturer and brand
      *
-     * @param manufacturerName The manufacturer name to search for
-     * @param brandName The optional brand name to search for
-     * @return The search query string
+     * @param manufacturerName The manufacturer name to search for (required)
+     * @param brandName        The brand name to search for (optional)
+     * @return A formatted search query string
      */
-    private String buildSearchQuery(String manufacturerName, String brandName) {
-        StringBuilder queryBuilder = new StringBuilder();
+    public String buildSearchQuery(String manufacturerName, String brandName) {
+        StringBuilder query = new StringBuilder();
 
-        queryBuilder.append("openfda.manufacturer_name:\"")
-                .append(manufacturerName)
-                .append("\"");
+        // Add manufacturer name condition (required)
+        query.append("openfda.manufacturer_name:\"").append(manufacturerName).append("\"");
 
-        if (brandName != null && !brandName.trim().isEmpty()) {
-            queryBuilder.append("+AND+openfda.brand_name:\"")
-                    .append(brandName)
-                    .append("\"");
+        // Add brand name condition if provided
+        if (StringUtils.hasText(brandName)) {
+            query.append(" AND openfda.brand_name:\"").append(brandName).append("\"");
         }
 
-        return queryBuilder.toString();
+        return query.toString();
     }
 }
